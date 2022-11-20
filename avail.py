@@ -67,8 +67,10 @@ def main():
         # calculate availability
         avail = {}
         for d, t in eventDict.items():
-            start = '00:00'
-            end = '23:59'
+            # start = '00:00'
+            # end = '23:59'
+            start = '09:00'
+            end = '21:00'
             for s, e in t:
                 if s > start:
                     if d not in avail:
@@ -90,6 +92,13 @@ def main():
             for i in times:
                 if i[0] == '' or i[1] == '':
                     break
+                # subtract both times
+                start = datetime.datetime.strptime(i[0], '%H:%M')
+                end = datetime.datetime.strptime(i[1], '%H:%M')
+                diff = end - start
+                # if diff is less than 30 minutes, break
+                #if diff.seconds < 1800:
+                #    break
                 start, end = datetime.datetime.strptime(i[0], "%H:%M").strftime("%I:%M %p"), datetime.datetime.strptime(i[1], "%H:%M").strftime("%I:%M %p")
                 timeArr.append(start.replace(" ", "").strip("0").lower().strip() + "-" + end.replace(" ", "").strip("0").lower().strip())
             timeStr = ", ".join(timeArr)
