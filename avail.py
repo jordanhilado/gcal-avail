@@ -97,8 +97,8 @@ def main():
                 end = datetime.datetime.strptime(i[1], '%H:%M')
                 diff = end - start
                 # if diff is less than 30 minutes, break
-                #if diff.seconds < 1800:
-                #    break
+                if diff.seconds < 1800:
+                    break
                 start, end = datetime.datetime.strptime(i[0], "%H:%M").strftime("%I:%M %p"), datetime.datetime.strptime(i[1], "%H:%M").strftime("%I:%M %p")
                 timeArr.append(start.replace(" ", "").strip("0").lower().strip() + "-" + end.replace(" ", "").strip("0").lower().strip())
             timeStr = ", ".join(timeArr)
