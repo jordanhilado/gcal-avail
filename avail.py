@@ -9,48 +9,88 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+TIME_ZONE_OPTIONS = {
+    "PST": "America/Los_Angeles",
+    "MST": "America/Phoenix",
+    "CST": "America/Chicago",
+    "EST": "America/New_York",
+}
+
+def calculate_end_date(x):
+    tomorrow = datetime.datetime.today() + datetime.timedelta(days=1)
+    days_added = 0
+    while days_added < x:
+        if tomorrow.weekday() not in (5, 6):  # Not weekend
+            days_added += 1
+        tomorrow += datetime.timedelta(days=1)
+    return tomorrow.strftime("%Y-%m-%d")
 
 
 def main():
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open("token.json", "w") as token:
             token.write(creds.to_json())
-
     try:
-        service = build('calendar', 'v3', credentials=creds)
+        service = build("calendar", "v3", credentials=creds)
 
-        # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-        # print('Getting the upcoming 10 events')
-        num_input = int(input("How many events far out do you want to see? "))
-        events_result = service.events().list(calendarId='primary', timeMin=now, maxResults=num_input, singleEvents=True, orderBy='startTime').execute()
-        # print(type(events_result))
-        events = events_result.get('items', [])
+        while True:
+            time_zone = input(
+                "Enter your desired time zone (PST, MST, CST, EST): "
+            ).upper()
+            if time_zone in TIME_ZONE_OPTIONS:
+                break
+            else:
+                print(
+                    "Invalid time zone. Please choose from the following: PST, MST, CST, or EST."
+                )
+
+        while True:
+            try:
+                days = int(
+                    input(
+                        "How many days out do you want to see your availability? "
+                    )
+                )
+                if days > 0:
+                    break
+                else:
+                    print("Invalid input. Please enter a positive integer.")
+            except ValueError:
+                print("Invalid input. Please enter a positive integer.")
+
+        time_zone_offset = TIME_ZONE_OPTIONS[time_zone]
+
+        end_date = (datetime.datetime.now() + datetime.timedelta(days=days + 1)).isoformat()
+        end_date = end_date.split("T")[0] + "T07:00:00Z"
+
+        event_list = (
+            service.events()
+            .list(
+                calendarId="primary",
+                singleEvents=True,
+                timeMin=datetime.datetime.now().isoformat() + "Z",
+                timeMax=end_date,
+                timeZone=time_zone_offset,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+
+        events = event_list.get("items", [])
 
         if not events:
             print('No upcoming events found.')
             return
 
-        # Prints the start and name of the next 10 events
         eventDict = {}
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
@@ -62,13 +102,9 @@ def main():
                 eventDict[date] = [(startTime, endTime)]
             else:
                 eventDict[date].append((startTime, endTime))
-            # print(start + " | " + end + " | " + event['summary'])
-
-        # calculate availability
+        
         avail = {}
         for d, t in eventDict.items():
-            # start = '00:00'
-            # end = '23:59'
             start = '09:00'
             end = '21:00'
             for s, e in t:
@@ -106,10 +142,9 @@ def main():
                 continue
             print("- " + weekday + ", " + month + "/" + day + ": " + timeStr)
 
-
     except HttpError as error:
-        print('An error occurred: %s' % error)
+        print("An error occurred: %s" % error)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

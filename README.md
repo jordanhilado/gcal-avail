@@ -17,4 +17,4 @@ How many events far out do you want to see? 20
 ## Local Setup
 
 1. Follow the [Google Calendar API Python quickstart](https://developers.google.com/calendar/api/quickstart/python) documentation steps
-2. After full setup, run the `avail.py` file in the same directory where your `credentials.json` is located
+2. After full setup, run the `avail.py` file in the same directory where your `credentials.json` is located (`token.json` should be fresh every session)
